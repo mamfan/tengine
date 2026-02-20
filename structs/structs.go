@@ -1,8 +1,8 @@
 package structs
 
-// Color represents an RGB color.
+// Color represents an RGBA color.
 type Color struct {
-	R, G, B uint8
+	R, G, B, A uint8
 }
 
 // World represents the game world grid.
@@ -81,6 +81,7 @@ func (w *World) Clear(c Color) {
 		row := w.Px[y]
 		for x := 0; x < w.W; x++ {
 			row[x] = c
+			row[x].A = 255
 		}
 	}
 }
@@ -90,7 +91,16 @@ func (w *World) Set(x, y int, c Color) {
 	if x < 0 || y < 0 || x >= w.W || y >= w.H {
 		return
 	}
-	w.Px[y][x] = c
+	if c.A == 0 {
+		return
+	}
+	if c.A == 255 {
+		c.A = 255
+		w.Px[y][x] = c
+		return
+	}
+	bg := w.Px[y][x]
+	w.Px[y][x] = blendOver(bg, c)
 }
 
 // View returns a view of the world from the camera's perspective.
@@ -150,5 +160,16 @@ func (g *GameObject) Draw(w *World) {
 			worldY := g.Position.Y + y - g.Pivot.Y
 			w.Set(worldX, worldY, row[x])
 		}
+	}
+}
+
+func blendOver(dst, src Color) Color {
+	alpha := int(src.A)
+	inv := 255 - alpha
+	return Color{
+		R: uint8((int(src.R)*alpha + int(dst.R)*inv) / 255),
+		G: uint8((int(src.G)*alpha + int(dst.G)*inv) / 255),
+		B: uint8((int(src.B)*alpha + int(dst.B)*inv) / 255),
+		A: 255,
 	}
 }

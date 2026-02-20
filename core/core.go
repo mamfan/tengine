@@ -57,7 +57,7 @@ func clamp(v, min, max int) int {
 	return v
 }
 
-func pollInput(events <-chan KeyboardEvent, camera *Camera, world *World) bool {
+func pollInput(events <-chan KeyboardEvent, object *GameObject, world *World, step int) bool {
 	for {
 		select {
 		case ev, ok := <-events:
@@ -72,13 +72,13 @@ func pollInput(events <-chan KeyboardEvent, camera *Camera, world *World) bool {
 			}
 			switch ev.Key {
 			case int('W'):
-				camera.Y = clamp(camera.Y-1, 0, world.H-camera.H)
+				object.Position.Y = clamp(object.Position.Y-step, 0, world.H-object.Height())
 			case int('S'):
-				camera.Y = clamp(camera.Y+1, 0, world.H-camera.H)
+				object.Position.Y = clamp(object.Position.Y+step, 0, world.H-object.Height())
 			case int('A'):
-				camera.X = clamp(camera.X-1, 0, world.W-camera.W)
+				object.Position.X = clamp(object.Position.X-step, 0, world.W-object.Width())
 			case int('D'):
-				camera.X = clamp(camera.X+1, 0, world.W-camera.W)
+				object.Position.X = clamp(object.Position.X+step, 0, world.W-object.Width())
 			}
 		default:
 			return false
@@ -87,8 +87,8 @@ func pollInput(events <-chan KeyboardEvent, camera *Camera, world *World) bool {
 }
 
 func main() {
-	world := render.NewWorld(720, 270)
-	bg := Color{R: 255, G: 255, B: 255}
+	world := render.NewWorld(720, 400)
+	bg := Color{R: 255, G: 255, B: 255, A: 255}
 
 	fmt.Print("\x1b[2J\x1b[H\x1b[?25l")
 	defer fmt.Print("\x1b[0m\x1b[?25h")
@@ -103,8 +103,8 @@ func main() {
 	}
 	defer restoreInput()
 
-	red := Color{R: 255, G: 0, B: 0}
-	green := Color{R: 0, G: 200, B: 0}
+	red := Color{R: 255, G: 0, B: 0, A: 255}
+	green := Color{R: 0, G: 200, B: 0, A: 255}
 
 	player := NewGameObject([][]Color{
 		{red, red, red, red},
@@ -123,16 +123,25 @@ func main() {
 	enemy.Pivot = Vec2{X: 1, Y: 1}
 	enemy.ZIndex = 0
 
-	alex, err := NewGameObjectFromFile("../assets/aaa.timg")
+	alex, err := NewGameObjectFromFile("aaa.jpg")
 	if err != nil {
 		fmt.Println("Error loading game object:", err)
 		return
 	}
-	alex.Position = Vec2{X: 1, Y: 1}
-	alex.Pivot = Vec2{X: 1, Y: 1}
+	alex.Position = Vec2{X: 0, Y: 0}
+	alex.Pivot = Vec2{X: 0, Y: 0}
 	alex.ZIndex = 1
 
-	objects := []*GameObject{player, enemy, alex}
+	dice, err := NewGameObjectFromFile("dices.png")
+	if err != nil {
+		fmt.Println("Error loading game object:", err)
+		return
+	}
+	dice.Position = Vec2{X: 240, Y: 135}
+	dice.Pivot = Vec2{X: 160, Y: 120}
+	dice.ZIndex = 1
+
+	objects := []*GameObject{player, enemy, alex, dice}
 
 	camera := Camera{X: 0, Y: 0, W: 480, H: 270}
 	if camera.W > world.W {
@@ -151,7 +160,7 @@ func main() {
 		case <-stop:
 			return
 		case <-ticker.C:
-			if pollInput(inputEvents, &camera, world) {
+			if pollInput(inputEvents, dice, world, 5) {
 				return
 			}
 			world.Clear(bg)
