@@ -31,6 +31,12 @@ type GameObject struct {
 	Visible  bool
 }
 
+// 
+type Renderer struct {
+    front [][]Color // shown
+    back  [][]Color // next frame
+}
+
 // InputState holds keyboard events for the current frame.
 type InputState struct {
 	Events []KeyboardEvent

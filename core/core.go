@@ -143,7 +143,7 @@ func main() {
 
 	objects := []*GameObject{player, enemy, alex, dice}
 
-	camera := Camera{X: 0, Y: 0, W: 480, H: 270}
+	camera := Camera{X: 0, Y: 0, W: 360, H: 200}
 	if camera.W > world.W {
 		camera.W = world.W
 	}
@@ -152,8 +152,14 @@ func main() {
 	}
 
 	// vx, vy := 3, 1
-	ticker := time.NewTicker((1000 / 30) * time.Millisecond)
+	ticker := time.NewTicker((1000 / 24) * time.Millisecond)
 	defer ticker.Stop()
+
+	// Clear world once at start
+	world.Clear(bg)
+	DrawObjects(world, objects)
+	view := camera.View(world)
+	render.Render(view)
 
 	for {
 		select {
@@ -163,7 +169,13 @@ func main() {
 			if pollInput(inputEvents, dice, world, 5) {
 				return
 			}
-			world.Clear(bg)
+
+			// Only clear the camera view area instead of entire world
+			for y := camera.Y; y < camera.Y+camera.H && y < world.H; y++ {
+				for x := camera.X; x < camera.X+camera.W && x < world.W; x++ {
+					world.Px[y][x] = bg
+				}
+			}
 
 			// player.Position.X += vx
 			// player.Position.Y += vy
@@ -183,6 +195,7 @@ func main() {
 
 			view := camera.View(world)
 			render.Render(view)
+			time.Sleep(5 * time.Millisecond) // Give terminal time to process
 		}
 	}
 }
